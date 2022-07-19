@@ -1,9 +1,10 @@
 %lang starknet
 
 from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.math import assert_le, assert_le_felt, assert_nn_le, assert_ge
 from starkware.cairo.common.pow import pow
 
-from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
+from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address, get_block_timestamp)
 
 
 from contracts.oracle_controller.IEmpiricOracle import IEmpiricOracle
@@ -58,6 +59,9 @@ end
 
 @external
 func place_bet_for{syscall_ptr : felt*, range_check_ptr, pedersen_ptr : HashBuiltin*}(amount: felt):
+    let (timestamp) = get_block_timestamp()
+    let (final_timestamp) = end_date.read()
+    assert_le(timestamp, final_timestamp)
     let (caller_address) = get_caller_address()
     let (contract_address) = get_contract_address()
     ERC20_transferFrom(caller_address, contract_address, amount)
@@ -71,6 +75,9 @@ end
 
 @external
 func place_bet_against{syscall_ptr : felt*, range_check_ptr, pedersen_ptr : HashBuiltin*}(amount: felt):
+    let (timestamp) = get_block_timestamp()
+    let (final_timestamp) = end_date.read()
+    assert_le(timestamp, final_timestamp)
     let (caller_address) = get_caller_address()
     let (contract_address) = get_contract_address()
     ERC20_transferFrom(caller_address, contract_address, amount)
@@ -83,8 +90,12 @@ func place_bet_against{syscall_ptr : felt*, range_check_ptr, pedersen_ptr : Hash
 end
 
 @external
-func claim{syscall_ptr : felt*, range_check_ptr, pedersen_ptr : HashBuiltin*}():
-    
+func fetch_truth{syscall_ptr : felt*, range_check_ptr, pedersen_ptr : HashBuiltin*}(amount: felt):
+    let (timestamp) = get_block_timestamp()
+    let (final_timestamp) = end_date.read()
+    assert_ge(timestamp, final_timestamp)
+    let (is_above_threshold) = check_eth_usd_threshold(2000)
+    result.write(is_above_threshold)
 end
 
 
